@@ -46,18 +46,29 @@ class DrawingApp:
         self.image = Image.new('L', (280, 280), 'white')
         self.draw = ImageDraw.Draw(self.image)
         self.canvas.bind('<B1-Motion>', self.paint)
+        self.canvas.bind('<ButtonRelease-1>', self.reset)
         self.btn_predict = tk.Button(root, text='Predict', command=self.predict)
-        self.btn_predict.pack()
+        self.btn_predict.pack(side=tk.LEFT)
+        self.btn_erase = tk.Button(root, text='Erase', command=self.erase)
+        self.btn_erase.pack(side=tk.LEFT)
         self.label = tk.Label(root, text='Draw a digit and click Predict')
         self.label.pack()
+        self.last_x, self.last_y = None, None
 
     def paint(self, event):
-        # Increase the size of the oval and the line width
-        x1, y1 = (event.x - 5), (event.y - 5)
-        x2, y2 = (event.x + 5), (event.y + 5)
-        self.canvas.create_oval(x1, y1, x2, y2, fill='black', width=10)
-        self.draw.ellipse([x1, y1, x2, y2], fill='black')
+        if self.last_x and self.last_y:
+            self.canvas.create_line((self.last_x, self.last_y, event.x, event.y), fill='black', width=10)
+            self.draw.line((self.last_x, self.last_y, event.x, event.y), fill='black', width=10)
+        self.last_x, self.last_y = event.x, event.y
 
+    def reset(self, event):
+        self.last_x, self.last_y = None, None
+
+    def erase(self):
+        self.canvas.delete('all')
+        self.image = Image.new('L', (280, 280), 'white')
+        self.draw = ImageDraw.Draw(self.image)
+        self.label.config(text='Draw a digit and click Predict')
 
     def preprocess_image(self):
         image = self.image.resize((28, 28), Image.Resampling.LANCZOS)
@@ -74,8 +85,8 @@ class DrawingApp:
         prediction = output.argmax(dim=1, keepdim=True).item()
         self.label.config(text=f'Prediction: {prediction}')
         print(f"Prediction: {prediction}")
-        plt.imshow(self.image, cmap='gray')
-        plt.show()
+        # plt.imshow(self.image, cmap='gray')
+        # plt.show()
 
 if __name__ == "__main__":
     root = tk.Tk()
